@@ -1,3 +1,5 @@
 <Solution>
+  <Project Path="src/Mediora.Contracts/Mediora.Contracts.csproj" />
   <Project Path="src/Mediora/Mediora.csproj" />
+  <Project Path="tests/Mediora.Tests/Mediora.Tests.csproj" />
 </Solution>

@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish-nuget:
+    runs-on: ubuntu-latest
+    environment: nuget
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore Mediora.slnx
+
+      - name: Build
+        run: dotnet build Mediora.slnx -c Release --no-restore
+
+      - name: Test
+        run: dotnet test Mediora.slnx -c Release --no-build
+
+      - name: Pack
+        run: dotnet pack Mediora.slnx -c Release --no-build -o ./artifacts/nuget
+
+      - name: Validate NuGet packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(./artifacts/nuget/*.nupkg)
+          if [ ${#files[@]} -eq 0 ] || [ ! -e "${files[0]}" ]; then
+            echo "No .nupkg files were generated."
+            exit 1
+          fi
+          printf "Generated packages:\n%s\n" "${files[@]}"
+
+      - name: Publish to NuGet
+        shell: bash
+        run: |
+          set -euo pipefail
+          for package in ./artifacts/nuget/*.nupkg; do
+            dotnet nuget push "$package" \
+              --source "https://api.nuget.org/v3/index.json" \
+              --api-key "${{ secrets.NUGET_API_KEY }}" \
+              --skip-duplicate
+          done
+
+      - name: Upload NuGet artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: nuget-release-packages
+          path: ./artifacts/nuget/*.nupkg
+          if-no-files-found: error
