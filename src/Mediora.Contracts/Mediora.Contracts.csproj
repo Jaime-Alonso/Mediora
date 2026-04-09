@@ -6,7 +6,7 @@
     <AssemblyName>Mediora.Contracts</AssemblyName>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>Mediora.Contracts</PackageId>
-    <Version>0.1.0-rc.1</Version>
+	<Version>1.0.0</Version>
     <Authors>Jaime Alonso</Authors>
     <Description>Contracts package for Mediora containing mediator message and handler abstractions.</Description>
     <PackageTags>mediator;contracts;cqrs;clean-architecture;dotnet</PackageTags>
@@ -16,7 +16,6 @@
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageProjectUrl>https://github.com/Jaime-Alonso/Mediora</PackageProjectUrl>
     <Deterministic>true</Deterministic>
-    <Copyright>Copyright (c) Jaime Alonso</Copyright>
   </PropertyGroup>
 
   <ItemGroup>

@@ -23,6 +23,11 @@ For these contracts, Mediora enforces exactly one implementation per closed type
 
 If duplicates are discovered (from scan results and/or existing `IServiceCollection` registrations), `AddMediora(...)` throws `InvalidOperationException` at startup.
 
+Factory-based registrations are also validated strictly:
+
+- `ImplementationFactory` registrations are treated as concrete implementations for uniqueness checks.
+- If a single-handler contract already exists for the same closed type, a factory registration still counts as a conflict.
+
 ## Notifications
 
 Multiple `INotificationHandler<TNotification>` registrations are valid and expected.

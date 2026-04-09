@@ -7,7 +7,7 @@ Use this package when you want to reference request, notification, stream, and p
 ## Install
 
 ```bash
-dotnet add package Mediora.Contracts --prerelease
+dotnet add package Mediora.Contracts
 ```
 
 ## Included abstractions
