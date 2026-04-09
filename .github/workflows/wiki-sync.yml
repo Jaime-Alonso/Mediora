@@ -1,0 +1,68 @@
+name: Wiki Sync
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "docs/**"
+      - ".github/workflows/wiki-sync.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: wiki-sync-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  sync-wiki:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Sync docs to GitHub Wiki
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ ! -d "docs" ]; then
+            echo "docs/ does not exist. Nothing to sync."
+            exit 0
+          fi
+
+          WIKI_URL="https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git"
+          git clone "$WIKI_URL" wiki
+
+          # Source of truth is docs/, so remove top-level markdown pages first.
+          find wiki -maxdepth 1 -type f -name "*.md" -delete
+
+          shopt -s nullglob
+          files=(docs/*.md)
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No markdown files in docs/. Nothing to sync."
+            exit 0
+          fi
+
+          cp docs/*.md wiki/
+
+          # GitHub Wiki expects Home.md as landing page.
+          if [ ! -f "wiki/Home.md" ] && [ -f "wiki/README.md" ]; then
+            mv "wiki/README.md" "wiki/Home.md"
+          fi
+
+          cd wiki
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          if [ -n "$(git status --porcelain)" ]; then
+            git add .
+            git commit -m "Sync wiki from docs"
+            git push
+            echo "Wiki synced."
+          else
+            echo "No wiki changes to commit."
+          fi
