@@ -456,59 +456,40 @@ public sealed class MedioraServiceConfiguration
 
             for (int j = 0; j < interfaces.Length; j++)
             {
-                Type serviceType = interfaces[j];
-
-                if (!serviceType.IsGenericType)
-                {
-                    continue;
-                }
-
-                Type serviceTypeDefinition = serviceType.GetGenericTypeDefinition();
-
-                if (serviceTypeDefinition == typeof(IRequestHandler<,>))
-                {
-                    if (!serviceType.ContainsGenericParameters && !implementationType.ContainsGenericParameters)
-                    {
-                        AddIfMissing(registrations, seen, new ServiceRegistration(serviceType, implementationType, serviceTypeDefinition));
-                    }
-
-                    continue;
-                }
-
-                if (serviceTypeDefinition == typeof(IRequestHandler<>))
-                {
-                    if (!serviceType.ContainsGenericParameters && !implementationType.ContainsGenericParameters)
-                    {
-                        AddIfMissing(registrations, seen, new ServiceRegistration(serviceType, implementationType, serviceTypeDefinition));
-                    }
-
-                    continue;
-                }
-
-                if (serviceTypeDefinition == typeof(INotificationHandler<>))
-                {
-                    if (!serviceType.ContainsGenericParameters && !implementationType.ContainsGenericParameters)
-                    {
-                        AddIfMissing(registrations, seen, new ServiceRegistration(serviceType, implementationType, serviceTypeDefinition));
-                    }
-
-                    continue;
-                }
-
-                if (serviceTypeDefinition == typeof(IStreamRequestHandler<,>))
-                {
-                    if (!serviceType.ContainsGenericParameters && !implementationType.ContainsGenericParameters)
-                    {
-                        AddIfMissing(registrations, seen, new ServiceRegistration(serviceType, implementationType, serviceTypeDefinition));
-                    }
-
-                    continue;
-                }
-
+                TryAddSupportedClosedRegistration(registrations, seen, interfaces[j], implementationType);
             }
         }
 
         return registrations;
+    }
+
+    private static void TryAddSupportedClosedRegistration(
+        List<ServiceRegistration> registrations,
+        HashSet<(string ServiceType, string ImplementationType)> seen,
+        Type serviceType,
+        Type implementationType)
+    {
+        if (!serviceType.IsGenericType)
+        {
+            return;
+        }
+
+        Type serviceTypeDefinition = serviceType.GetGenericTypeDefinition();
+
+        if (serviceTypeDefinition != typeof(IRequestHandler<,>)
+            && serviceTypeDefinition != typeof(IRequestHandler<>)
+            && serviceTypeDefinition != typeof(INotificationHandler<>)
+            && serviceTypeDefinition != typeof(IStreamRequestHandler<,>))
+        {
+            return;
+        }
+
+        if (serviceType.ContainsGenericParameters || implementationType.ContainsGenericParameters)
+        {
+            return;
+        }
+
+        AddIfMissing(registrations, seen, new ServiceRegistration(serviceType, implementationType, serviceTypeDefinition));
     }
 
     private static Type[] GetLoadableTypes(Assembly assembly)

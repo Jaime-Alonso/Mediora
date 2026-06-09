@@ -596,6 +596,32 @@ public sealed class ServiceCollectionExtensionsTests
     }
 
     [Fact]
+    public void AddMediora_DoesNotRegisterOpenGenericHandlersFromAssembly()
+    {
+        var services = new ServiceCollection();
+
+        services.AddMediora(options => options.RegisterServicesFromAssembly(typeof(OpenGenericAssemblyRequestHandler<,>).Assembly));
+
+        using var provider = services.BuildServiceProvider();
+        var handlers = provider.GetServices<IRequestHandler<OpenGenericAssemblyRequest, string>>();
+
+        Assert.Empty(handlers);
+    }
+
+    [Fact]
+    public void AddMediora_DoesNotRegisterAbstractHandlersFromAssembly()
+    {
+        var services = new ServiceCollection();
+
+        services.AddMediora(options => options.RegisterServicesFromAssembly(typeof(AbstractAssemblyRequestHandler).Assembly));
+
+        using var provider = services.BuildServiceProvider();
+        var handlers = provider.GetServices<IRequestHandler<AbstractAssemblyRequest, string>>();
+
+        Assert.Empty(handlers);
+    }
+
+    [Fact]
     public void AddMediora_ThrowsInvalidOperationException_WhenDuplicateRequestHandlersExist()
     {
         var method = typeof(ServiceCollectionExtensions).GetMethod(
@@ -981,12 +1007,30 @@ public sealed class ServiceCollectionExtensionsTests
 
     private sealed record IdempotentRequest : IRequest<string>;
 
+    private sealed record OpenGenericAssemblyRequest : IRequest<string>;
+
+    private sealed record AbstractAssemblyRequest : IRequest<string>;
+
     private sealed class IdempotentRequestHandler : IRequestHandler<IdempotentRequest, string>
     {
         public Task<string> Handle(IdempotentRequest request, CancellationToken cancellationToken)
         {
             return Task.FromResult("ok");
         }
+    }
+
+    private sealed class OpenGenericAssemblyRequestHandler<TRequest, TResponse> : IRequestHandler<TRequest, TResponse>
+        where TRequest : IRequest<TResponse>
+    {
+        public Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken)
+        {
+            throw new NotSupportedException();
+        }
+    }
+
+    private abstract class AbstractAssemblyRequestHandler : IRequestHandler<AbstractAssemblyRequest, string>
+    {
+        public abstract Task<string> Handle(AbstractAssemblyRequest request, CancellationToken cancellationToken);
     }
 
     private sealed record IdempotentNotification : INotification;
